@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Analytics - Airline Performance{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">Advanced Analytics</h1>
+        <p class="lead">Detailed analysis and trends</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <!-- Place for filters - can be extended -->
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><h5>Monthly Trend Analysis</h5></div>
+            <div class="card-body"><div id="monthlyTrendChart"></div></div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadMonthlyTrend();
+});
+
+function loadMonthlyTrend() {
+    fetch('/api/monthly_trend')
+        .then(response => response.json())
+        .then(data => {
+            const months = Object.keys(data).map(m => parseInt(m));
+            const delayRates = months.map(m => data[m].delay_rate);
+            const avgDelays = months.map(m => data[m].avg_delay);
+            const trace1 = {x: months, y: delayRates, type: 'scatter', mode: 'lines+markers', name: 'Delay Rate (%)', yaxis: 'y'};
+            const trace2 = {x: months, y: avgDelays, type: 'scatter', mode: 'lines+markers', name: 'Avg Delay (min)', yaxis: 'y2'};
+            const layout = {
+                xaxis: {title: 'Month'},
+                yaxis: {title: 'Delay Rate (%)', side: 'left'},
+                yaxis2: {title: 'Average Delay (minutes)', side: 'right', overlaying: 'y'},
+                height: 400,
+                margin: {t: 20, b: 40, l: 40, r: 40}
+            };
+            Plotly.newPlot('monthlyTrendChart', [trace1, trace2], layout);
+        });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Flight Route Map - Airline Performance{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">Flight Route Map</h1>
+        <p class="lead">Interactive map showing flight connections and delay performance</p>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-filter"></i> Map Filters</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="airline" class="form-label">Airline:</label>
+                            <select id="airline" name="airline" class="form-select">
+                                {% for airline in airlines %}
+                                <option value="{{ airline }}" {% if airline == selected_airline %}selected{% endif %}>
+                                    {{ airline }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="airport" class="form-label">Airport:</label>
+                            <select id="airport" name="airport" class="form-select">
+                                {% for airport in airports %}
+                                <option value="{{ airport }}" {% if airport == selected_airport %}selected{% endif %}>
+                                    {{ airport }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="month" class="form-label">Month:</label>
+                            <select id="month" name="month" class="form-select">
+                                {% for month in months %}
+                                <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>
+                                    {% if month == 'All' %}All Months{% else %}{{ month }}{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="min_delay" class="form-label">Min Delay:</label>
+                            <input type="number" id="min_delay" name="min_delay" class="form-control" 
+                                   value="{{ min_delay }}" min="0">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">Apply Filters</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Map -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                {{ map_html|safe }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

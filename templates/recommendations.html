@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Recommendations - Airline Performance{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">Operational Recommendations</h1>
+        <p class="lead">Data-driven insights for improving airline performance</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        {% for rec in recommendations %}
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ rec.title }}</h5>
+                <span class="badge {% if rec.priority == 'High' %}bg-danger{% elif rec.priority == 'Medium' %}bg-warning{% else %}bg-info{% endif %}">
+                    {{ rec.priority }} Priority
+                </span>
+            </div>
+            <div class="card-body">
+                <p class="card-text">{{ rec.description }}</p>
+                <small class="text-muted">Category: {{ rec.type }}</small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><h5>General Best Practices</h5></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-clock text-primary"></i> Schedule Optimization</h6>
+                        <ul>
+                            <li>Add buffer time during peak hours</li>
+                            <li>Redistribute flights from congested slots</li>
+                            <li>Consider seasonal adjustments</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-tools text-success"></i> Operational Excellence</h6>
+                        <ul>
+                            <li>Improve ground turnaround times</li>
+                            <li>Enhance maintenance scheduling</li>
+                            <li>Optimize crew assignments</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-chart-line text-info"></i> Performance Monitoring</h6>
+                        <ul>
+                            <li>Real-time delay tracking</li>
+                            <li>Predictive analytics implementation</li>
+                            <li>Regular performance reviews</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

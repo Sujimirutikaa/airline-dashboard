@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Airline Performance{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">Flight Delay Analysis Dashboard</h1>
+        <p class="lead">Real-time insights into airline performance and delay patterns</p>
+    </div>
+</div>
+
+<!-- User Input Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-filter"></i> Dashboard Filters</h5>
+            </div>
+            <div class="card-body">
+                <form id="filterForm" method="GET">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="airline" class="form-label">Airline:</label>
+                            <select id="airline" name="airline" class="form-select">
+                                {% for airline in airlines %}
+                                <option value="{{ airline }}" {% if airline == selected_airline %}selected{% endif %}>
+                                    {{ airline }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="airport" class="form-label">Airport:</label>
+                            <select id="airport" name="airport" class="form-select">
+                                {% for airport in airports %}
+                                <option value="{{ airport }}" {% if airport == selected_airport %}selected{% endif %}>
+                                    {{ airport }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="month" class="form-label">Month:</label>
+                            <select id="month" name="month" class="form-select">
+                                {% for month in months %}
+                                <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>
+                                    {% if month == 'All' %}All Months{% else %}{{ month }}{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="min_delay" class="form-label">Min Delay (min):</label>
+                            <input type="number" id="min_delay" name="min_delay" class="form-control" 
+                                   value="{{ min_delay }}" min="0" placeholder="0">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="max_delay" class="form-label">Max Delay (min):</label>
+                            <input type="number" id="max_delay" name="max_delay" class="form-control" 
+                                   value="{{ max_delay }}" min="0" placeholder="{{ max_delay }}">
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-search"></i> Apply Filters
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="clearFilters()">
+                                <i class="fas fa-times"></i> Clear Filters
+                            </button>
+                            <button type="button" class="btn btn-info" onclick="refreshData()">
+                                <i class="fas fa-sync"></i> Refresh Data
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Key Metrics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h4>{{ "{:,}".format(stats.total_flights) }}</h4>
+                    <p class="mb-0">Total Flights</p>
+                </div>
+                <i class="fas fa-plane fa-2x"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h4>{{ "{:,}".format(stats.delayed_flights) }}</h4>
+                    <p class="mb-0">Delayed Flights</p>
+                </div>
+                <i class="fas fa-clock fa-2x"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h4>{{ "{:.1f}%".format(stats.delay_rate) }}</h4>
+                    <p class="mb-0">Delay Rate</p>
+                </div>
+                <i class="fas fa-percentage fa-2x"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h4>{{ "{:.0f} min".format(stats.avg_delay) }}</h4>
+                    <p class="mb-0">Avg Delay</p>
+                </div>
+                <i class="fas fa-hourglass-half fa-2x"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Delay Reasons Distribution</h5>
+            </div>
+            <div class="card-body">
+                <div id="delayReasonsChart"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Hourly Delay Pattern</h5>
+            </div>
+            <div class="card-body">
+                <div id="hourlyPatternChart"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Airline Performance</h5>
+            </div>
+            <div class="card-body">
+                <div id="airlineChart"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Airport Performance</h5>
+            </div>
+            <div class="card-body">
+                <div id="airportChart"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Recommendations -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Quick Insights (Based on Current Filters)</h5>
+            </div>
+            <div class="card-body" id="quickInsights"></div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function getFilterParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return {
+        airline: urlParams.get('airline') || 'All',
+        airport: urlParams.get('airport') || 'All', 
+        month: urlParams.get('month') || 'All',
+        min_delay: urlParams.get('min_delay') || 0,
+        max_delay: urlParams.get('max_delay') || 1000
+    };
+}
+
+function clearFilters() {
+    window.location.href = window.location.pathname;
+}
+
+function refreshData() {
+    loadDelayReasons();
+    loadHourlyPattern(); 
+    loadAirlinePerformance();
+    loadAirportPerformance();
+    loadQuickInsights();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadDelayReasons();
+    loadHourlyPattern();
+    loadAirlinePerformance();
+    loadAirportPerformance();
+    loadQuickInsights();
+});
+
+function loadDelayReasons() {
+    const params = getFilterParams();
+    const queryString = new URLSearchParams(params).toString();
+    
+    fetch(`/api/delay_reasons?${queryString}`)
+        .then(response => response.json())
+        .then(data => {
+            const labels = Object.keys(data);
+            const values = Object.values(data);
+            
+            if (labels.length === 0) {
+                document.getElementById('delayReasonsChart').innerHTML = 
+                    '<div class="text-center text-muted">No delay data available for current filters</div>';
+                return;
+            }
+            
+            const trace = {
+                labels: labels,
+                values: values,
+                type: 'pie',
+                hole: 0.4,
+                textinfo: 'label+percent',
+                textposition: 'outside'
+            };
+            
+            const layout = {height: 300, margin: {t: 20, b: 20}};
+            Plotly.newPlot('delayReasonsChart', [trace], layout);
+        })
+        .catch(error => console.error('Error loading delay reasons:', error));
+}
+
+function loadHourlyPattern() {
+    const params = getFilterParams();
+    const queryString = new URLSearchParams(params).toString();
+    
+    fetch(`/api/hourly_pattern?${queryString}`)
+        .then(response => response.json())
+        .then(data => {
+            if (Object.keys(data).length === 0) {
+                document.getElementById('hourlyPatternChart').innerHTML = 
+                    '<div class="text-center text-muted">No hourly data available</div>';
+                return;
+            }
+            
+            const hours = Object.keys(data).map(h => parseInt(h));
+            const delayRates = hours.map(h => data[h].delay_rate);
+            
+            const trace = {
+                x: hours,
+                y: delayRates,
+                type: 'bar',
+                marker: {color: 'rgba(54, 162, 235, 0.8)'}
+            };
+            
+            const layout = {
+                xaxis: {title: 'Hour of Day'},
+                yaxis: {title: 'Delay Rate (%)'},
+                height: 300,
+                margin: {t: 20, b: 40, l: 40}
+            };
+            
+            Plotly.newPlot('hourlyPatternChart', [trace], layout);
+        });
+}
+
+function loadAirlinePerformance() {
+    const params = getFilterParams();
+    const queryString = new URLSearchParams(params).toString();
+    
+    fetch(`/api/airline_delays?${queryString}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.length === 0) {
+                document.getElementById('airlineChart').innerHTML = 
+                    '<div class="text-center text-muted">No airline data available</div>';
+                return;
+            }
+            
+            const airlines = data.map(d => d.airline);
+            const delayRates = data.map(d => d.delay_rate);
+            
+            const trace = {
+                x: delayRates,
+                y: airlines,
+                type: 'bar',
+                orientation: 'h',
+                marker: {color: 'rgba(255, 99, 132, 0.8)'}
+            };
+            
+            const layout = {
+                xaxis: {title: 'Delay Rate (%)'},
+                height: 300,
+                margin: {t: 20, l: 120}
+            };
+            
+            Plotly.newPlot('airlineChart', [trace], layout);
+        });
+}
+
+function loadAirportPerformance() {
+    const params = getFilterParams();
+    const queryString = new URLSearchParams(params).toString();
+    
+    fetch(`/api/airport_delays?${queryString}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.length === 0) {
+                document.getElementById('airportChart').innerHTML = 
+                    '<div class="text-center text-muted">No airport data available</div>';
+                return;
+            }
+            
+            data.sort((a, b) => b.delay_rate - a.delay_rate);
+            const topAirports = data.slice(0, 10);
+            
+            const airports = topAirports.map(d => d.origin_airport);
+            const delayRates = topAirports.map(d => d.delay_rate);
+            
+            const trace = {
+                x: airports,
+                y: delayRates,
+                type: 'bar',
+                marker: {color: 'rgba(75, 192, 192, 0.8)'}
+            };
+            
+            const layout = {
+                xaxis: {title: 'Airport'},
+                yaxis: {title: 'Delay Rate (%)'},
+                height: 300,
+                margin: {t: 20, b: 40}
+            };
+            
+            Plotly.newPlot('airportChart', [trace], layout);
+        });
+}
+
+function loadQuickInsights() {
+    const params = getFilterParams();
+    const queryString = new URLSearchParams(params).toString();
+    
+    fetch(`/api/recommendations?${queryString}`)
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('quickInsights');
+            container.innerHTML = '';
+            
+            if (data.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted">No recommendations available</div>';
+                return;
+            }
+            
+            data.slice(0, 3).forEach(rec => {
+                const insight = document.createElement('div');
+                insight.className = 'alert alert-info mb-2';
+                insight.innerHTML = `
+                    <strong>${rec.title}</strong><br>
+                    ${rec.description}
+                    <small class="d-block mt-1 text-muted">Priority: ${rec.priority}</small>
+                `;
+                container.appendChild(insight);
+            });
+        });
+}
+</script>
+{% endblock %}
